@@ -1,4 +1,5 @@
 import { pool } from '../helper/db.js'
+import { auth } from '../helper/auth.js'
 import { Router } from 'express'
 
 const router = Router()
@@ -8,10 +9,10 @@ router.get('/', (req, res, next) => {
     if(err){
         return next(err)
     }
-    res.status(200).json(result.rows)
+    res.status(200).json(result.rows || [])
 })
 })
-router.post('/create', (req, res) => {
+router.post('/create',auth, (req, res, next) => {
     const {task} = req.body
 
     if(!task) {
@@ -20,13 +21,13 @@ router.post('/create', (req, res) => {
     pool.query('INSERT INTO task (description) VALUES ($1) RETURNING *', [task.description],
     (err, result) => {
         if(err) { 
-            return res.status(500).json({error: err.message})
+            return next(err)
         }
         res.status(201).json({id: result.rows[0].id, description: task.description })
     })
 })
 
-router.delete('/delete/:id', (req, res,next) => {
+router.delete('/delete/:id', auth,(req, res,next) => {
     const {id} = req.params
 
     pool.query('DELETE FROM task WHERE id = $1',
